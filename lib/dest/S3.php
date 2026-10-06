@@ -17,6 +17,7 @@ class S3 implements Remote {
 	private string $secret_key;
 	private string $sse;
 	private ?string $proxy;
+	private bool $verify_tls;
 
 	// For tests: fixed clock.
 	public ?int $now = null;
@@ -31,6 +32,7 @@ class S3 implements Remote {
 		$this->secret_key = $secret_key;
 		$this->sse = $d['sse'];
 		$this->proxy = $proxy;
+		$this->verify_tls = (bool) ($d['verify_tls'] ?? true);
 
 		if ($this->bucket === '' || $this->access_key === '' || $this->secret_key === '') {
 			throw new \InvalidArgumentException('S3 destination needs a bucket, access key and secret key.');
@@ -191,7 +193,9 @@ class S3 implements Remote {
 			CURLOPT_CUSTOMREQUEST => $method,
 			CURLOPT_HTTPHEADER => array_map(static fn($k, $v) => $k.': '.$v, array_keys($headers), $headers),
 			CURLOPT_CONNECTTIMEOUT => 20,
-			CURLOPT_TIMEOUT => 3600
+			CURLOPT_TIMEOUT => 3600,
+			CURLOPT_SSL_VERIFYPEER => $this->verify_tls,
+			CURLOPT_SSL_VERIFYHOST => $this->verify_tls ? 2 : 0
 		];
 
 		$in = $out = null;

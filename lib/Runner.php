@@ -11,7 +11,7 @@ namespace Modules\ConfigBackup\Lib;
  */
 class Runner {
 
-	public const VERSION = '1.4.0';
+	public const VERSION = '1.4.1';
 	private const RETRY_MAX = 5;
 
 	private string $storage;
@@ -85,15 +85,15 @@ class Runner {
 		}
 
 		return $this->api = new HttpApiClient($api['url'], Runtime::reveal($this->storage, $api['token']),
-			!preg_match('~^https://(127\.0\.0\.1|localhost)~', $api['url'])
+			$api['verify_tls'], null, 300, $api['ca_file']
 		);
 	}
 
 	/**
 	 * Same check the Settings page runs when saved. Static so the frontend can use it with the token it holds.
 	 */
-	public static function testApi(string $url, string $token): string {
-		$api = new HttpApiClient($url, $token, !preg_match('~^https://(127\.0\.0\.1|localhost)~', $url), null, 20);
+	public static function testApi(string $url, string $token, bool $verify_tls = true, string $ca_file = ''): string {
+		$api = new HttpApiClient($url, $token, $verify_tls, null, 20, $ca_file);
 		$version = $api->call('apiinfo.version', []);
 		$api->call('module.get', ['output' => ['moduleid'], 'limit' => 1]);
 

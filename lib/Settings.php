@@ -19,7 +19,7 @@ class Settings {
 
 	public const DEFAULTS = [
 		'version' => 2,
-		'api' => ['url' => '', 'token' => ''],
+		'api' => ['url' => '', 'token' => '', 'verify_tls' => true, 'ca_file' => ''],
 		'keep_count' => 30,
 		'keep_days' => 0,
 		'expect_hours' => 24,
@@ -51,6 +51,7 @@ class Settings {
 		'kind' => 's3',          // s3 | sftp | git
 		'enabled' => true,
 		'manual' => false,       // also receive snapshots taken with "Back up now"
+		'verify_tls' => true,    // s3 and git over https: check the server certificate
 		'keep_count' => 30,
 		'keep_days' => 0,
 		'public_key' => '',      // PEM: encrypt before upload (s3, sftp)
@@ -94,6 +95,8 @@ class Settings {
 	public static function normalize(array $s): array {
 		$s += self::DEFAULTS;
 		$s['api'] = (array) $s['api'] + self::DEFAULTS['api'];
+		$s['api']['verify_tls'] = (bool) $s['api']['verify_tls'];
+		$s['api']['ca_file'] = trim((string) $s['api']['ca_file']);
 		$s['monitoring'] = (array) $s['monitoring'] + self::DEFAULTS['monitoring'];
 		$s['monitoring']['enabled'] = (bool) $s['monitoring']['enabled'];
 		$s['monitoring']['host'] = trim((string) $s['monitoring']['host']) ?: 'Config backup';
@@ -123,7 +126,7 @@ class Settings {
 			$x = (array) $x + self::DESTINATION_DEFAULTS;
 			$x['kind'] = in_array($x['kind'], ['s3', 'sftp', 'git'], true) ? $x['kind'] : 's3';
 
-			foreach (['enabled', 'manual', 'path_style', 'git_exclude_people'] as $k) {
+			foreach (['enabled', 'manual', 'path_style', 'git_exclude_people', 'verify_tls'] as $k) {
 				$x[$k] = (bool) $x[$k];
 			}
 

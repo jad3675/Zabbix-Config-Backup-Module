@@ -47,6 +47,10 @@ class Git {
 			mkdir($this->env['HOME'], 0700, true);
 		}
 
+		if (!($this->d['verify_tls'] ?? true)) {
+			$this->env['GIT_SSL_NO_VERIFY'] = 'true';
+		}
+
 		if ($this->d['git_auth'] === 'ssh') {
 			$key = $this->env['HOME'].'/id';
 			$known = $this->env['HOME'].'/known_hosts';

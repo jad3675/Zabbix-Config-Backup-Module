@@ -65,6 +65,10 @@ switch ($kind) {
 			])])
 			->addItem([(new CLabel(_('Access key'), 'access_key'))->setAsteriskMark(), new CFormField($text('access_key'))])
 			->addItem([new CLabel(_('Secret key'), 'secret_key'), new CFormField($secret('secret_key'))])
+			->addItem([new CLabel(_('TLS'), 'verify_tls'), new CFormField([
+				(new CCheckBox('verify_tls'))->setLabel(_('Verify TLS certificate'))->setChecked($d['verify_tls']),
+				$grey(_('Untick only for a self-signed endpoint you control. Off, anything answering at that address gets the credentials.'))
+			])])
 			->addItem([new CLabel(_('Server-side encryption'), 'sse'), new CFormField(
 				(new CSelect('sse'))->setValue($d['sse'])
 					->addOption(new CSelectOption('', _('Bucket default')))
@@ -132,6 +136,10 @@ switch ($kind) {
 				$grey(_('GitHub: any name. GitLab: oauth2 or the token name.'))
 			]))->addClass('cb-git-https')])
 			->addItem([new CLabel(_('Token'), 'git_token'), (new CFormField($secret('git_token')))->addClass('cb-git-https')])
+			->addItem([new CLabel(_('TLS'), 'verify_tls'), (new CFormField([
+				(new CCheckBox('verify_tls'))->setLabel(_('Verify TLS certificate'))->setChecked($d['verify_tls']),
+				$grey(_('HTTPS only. Untick only for a self-signed Git server you control.'))
+			]))->addClass('cb-git-https')])
 			->addItem([new CLabel(_('Commit author')), new CFormField([$text('author_name'), ' ', $text('author_email')])])
 			->addItem([new CLabel(_('Leave out people'), 'git_exclude_people'), new CFormField([
 				(new CCheckBox('git_exclude_people'))->setChecked($d['git_exclude_people']),

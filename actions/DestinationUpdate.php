@@ -23,6 +23,7 @@ class DestinationUpdate extends Base {
 			'manual' => 'in 0,1',
 			'path_style' => 'in 0,1',
 			'git_exclude_people' => 'in 0,1',
+			'verify_tls' => 'in 0,1',
 			'port' => 'int32|ge 1|le 65535',
 			'keep_count' => 'int32|ge 1|le 100000',
 			'keep_days' => 'int32|ge 0|le 36500',
@@ -83,8 +84,13 @@ class DestinationUpdate extends Base {
 			}
 		}
 
-		foreach (['enabled', 'manual', 'path_style', 'git_exclude_people'] as $field) {
+		foreach (['enabled', 'manual', 'path_style', 'git_exclude_people', 'verify_tls'] as $field) {
 			$d[$field] = $this->getInput($field, 0) == 1;
+		}
+
+		// SFTP has its own host key pinning; the TLS switch does not apply.
+		if ($d['kind'] === 'sftp') {
+			$d['verify_tls'] = true;
 		}
 
 		foreach (['port', 'keep_count', 'keep_days'] as $field) {

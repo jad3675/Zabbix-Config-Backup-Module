@@ -54,6 +54,15 @@ $form->addItem((new CFormGrid())
 		(new CTextBox('api_url', $data['suggested_url'], false, 1024))->setWidth(ZBX_TEXTAREA_BIG_WIDTH),
 		$grey(_('How the runner reaches this frontend, normally http://127.0.0.1/zabbix or the URL above it.'))
 	])])
+	->addItem([new CLabel(_('TLS'), 'api_verify_tls'), new CFormField([
+		(new CCheckBox('api_verify_tls'))->setLabel(_('Verify TLS certificate'))->setChecked($settings['api']['verify_tls']),
+		new CDiv([
+			(new CTextBox('api_ca_file', $settings['api']['ca_file'], false, 1024))
+				->setWidth(ZBX_TEXTAREA_BIG_WIDTH)
+				->setAttribute('placeholder', '/etc/ssl/certs/internal-ca.pem')
+		]),
+		$grey(_('For https with a self-signed certificate or an internal CA: give the CA certificate file (PEM) above, which keeps checking, or untick verification. Unticked, the runner trusts whatever answers at that address, so prefer http://127.0.0.1/zabbix on the same server, or the CA file.'))
+	])])
 	->addItem([new CLabel(_('API token'), 'api_token'), new CFormField([
 		(new CPassBox('api_token', '', 128))->setWidth(ZBX_TEXTAREA_BIG_WIDTH)
 			->setAttribute('placeholder', $data['token_set'] ? _('stored; type to replace') : _('token of a Super admin user'))

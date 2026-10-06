@@ -23,6 +23,8 @@ class SettingsUpdate extends Base {
 			'api_url' => 'string',
 			'api_token' => 'string',
 			'api_token_clear' => 'in 0,1',
+			'api_verify_tls' => 'in 0,1',
+			'api_ca_file' => 'string',
 			'timezone' => 'string'
 		]);
 
@@ -88,6 +90,13 @@ class SettingsUpdate extends Base {
 			$url = preg_replace('~[?#].*$~', '', trim($this->getInput('api_url', '')));
 			$settings['api']['url'] = rtrim(preg_replace('~/(zabbix|index|api_jsonrpc)\.php$~', '', $url), '/');
 
+			$settings['api']['verify_tls'] = $this->getInput('api_verify_tls', 0) == 1;
+			$settings['api']['ca_file'] = trim($this->getInput('api_ca_file', ''));
+
+			if ($settings['api']['ca_file'] !== '' && $settings['api']['ca_file'][0] !== '/') {
+				throw new \RuntimeException(_('CA certificate file must be an absolute path.'));
+			}
+
 			$token = trim($this->getInput('api_token', ''));
 			if ($this->getInput('api_token_clear', 0) == 1) {
 				$settings['api']['token'] = '';
@@ -123,7 +132,13 @@ class SettingsUpdate extends Base {
 		}
 		else {
 			try {
-				$message = Runner::testApi($api['url'], Runtime::reveal($storage, $api['token']));
+				$message = Runner::testApi($api['url'], Runtime::reveal($storage, $api['token']), $api['verify_tls'],
+					$api['ca_file']
+				);
+
+				if (!$api['verify_tls'] && preg_match('~^https://~i', $api['url'])) {
+					$message .= ' (certificate not verified)';
+				}
 				$ok = true;
 			}
 			catch (\Throwable $e) {

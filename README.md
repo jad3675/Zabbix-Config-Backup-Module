@@ -3,7 +3,7 @@
 Snapshots of Zabbix configuration on a schedule, copied to S3, SFTP and Git, with restore of a single object,
 a selection, or a copy under a new name. Built because there is no undo for a deleted dashboard.
 
-Version 1.4.0. Developed and tested on Zabbix 7.4.15, also running on 8.0.0, with PostgreSQL, against an S3 mock (moto), OpenSSH sftp and a bare Git
+Version 1.4.1. Developed and tested on Zabbix 7.4.15, also running on 8.0.0, with PostgreSQL, against an S3 mock (moto), OpenSSH sftp and a bare Git
 repository over SSH. Super admin only: snapshots contain users, roles and every action.
 
 ## What it backs up
@@ -34,7 +34,9 @@ Then:
 1. Administration > General > Modules > Scan directory, enable **Config backup**. It appears as
    Administration > Config backup.
 2. Config backup > Settings: enter the Zabbix URL the runner should use and an API token of a Super admin user
-   (Users > API tokens). Update.
+   (Users > API tokens). Update. For https with a self-signed certificate or an internal CA, give the CA
+   certificate file (keeps verification on) or untick "Verify TLS certificate". `http://127.0.0.1/zabbix` on the
+   same server avoids the question entirely.
 3. Add destinations and schedules.
 
 PHP needs `curl`, `openssl` and `zlib` (all standard). Git destinations need the `git` binary. SFTP needs nothing
@@ -175,6 +177,8 @@ endpoints.
 
 - Endpoint empty for AWS; path-style on for most self-hosted S3.
 - Use a prefix per Zabbix instance.
+- "Verify TLS certificate" can be unticked for a self-signed MinIO or similar you control (also on Git over
+  HTTPS). Off, anything answering at that address gets the access key.
 - Give the access key only `ListBucket` on the prefix and `Put/Get/DeleteObject` under it
   (`contrib/s3-policy.example.json`).
 - Turn on bucket versioning or Object Lock. Then a compromised Zabbix server cannot destroy its own history.

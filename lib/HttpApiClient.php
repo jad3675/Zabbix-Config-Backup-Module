@@ -10,12 +10,14 @@ class HttpApiClient implements ApiClient {
 	private string $url;
 	private string $token;
 	private bool $verify_tls;
+	private string $ca_file;
 	private ?string $proxy;
 	private int $timeout;
 	private int $seq = 0;
 
 	public function __construct(string $url, string $token, bool $verify_tls = true, ?string $proxy = null,
-			int $timeout = 300) {
+			int $timeout = 300, string $ca_file = '') {
+		$this->ca_file = $ca_file;
 		// Accept whatever got pasted from the browser: .../zabbix, .../zabbix/, .../zabbix.php?action=..., .../index.php
 		$url = trim($url);
 		$url = preg_replace('~[?#].*$~', '', $url);
@@ -56,6 +58,10 @@ class HttpApiClient implements ApiClient {
 			CURLOPT_SSL_VERIFYHOST => $this->verify_tls ? 2 : 0
 		]);
 
+		if ($this->verify_tls && $this->ca_file !== '') {
+			curl_setopt($ch, CURLOPT_CAINFO, $this->ca_file);
+		}
+
 		if ($this->proxy !== null) {
 			// socks5h://host:port, http://host:port etc. curl figures out the type from the scheme.
 			curl_setopt($ch, CURLOPT_PROXY, $this->proxy);
@@ -67,8 +73,11 @@ class HttpApiClient implements ApiClient {
 			$error = curl_error($ch);
 			curl_close($ch);
 
-			throw new ApiException(sprintf('%s: cannot reach %s: %s. The runner calls this URL from the Zabbix frontend server itself; http://127.0.0.1/zabbix usually works there, and avoids firewalls and proxies.',
-				$method, $this->url, $error
+			$tls = preg_match('/SSL|certificate|TLS/i', $error);
+
+			throw new ApiException(sprintf('%s: cannot reach %s: %s. %s', $method, $this->url, $error, $tls
+				? 'The certificate is not trusted from this server (self-signed or an internal CA). In Settings, give the CA certificate file, or untick "Verify TLS certificate".'
+				: 'The runner calls this URL from the Zabbix frontend server itself; http://127.0.0.1/zabbix usually works there, and avoids firewalls and proxies.'
 			));
 		}
 

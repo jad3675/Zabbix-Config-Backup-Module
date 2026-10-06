@@ -7,7 +7,7 @@ namespace Modules\ConfigBackup\Lib;
  */
 class Backup {
 
-	public const MODULE_VERSION = '1.4.0';
+	public const MODULE_VERSION = '1.4.1';
 
 	private ApiClient $api;
 	private Store $store;
