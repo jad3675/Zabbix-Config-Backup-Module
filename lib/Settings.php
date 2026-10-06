@@ -13,7 +13,9 @@ namespace Modules\ConfigBackup\Lib;
 class Settings {
 
 	public const MODULE_ID = 'configbackup';
-	public const DEFAULT_STORAGE = '/var/lib/zabbix/configbackup';
+	public const DEFAULT_STORAGE = '/var/lib/zabbix-configbackup';
+	// Default before 1.4.0; install-runner.sh offers to move it.
+	public const LEGACY_STORAGE = '/var/lib/zabbix/configbackup';
 
 	public const DEFAULTS = [
 		'version' => 2,

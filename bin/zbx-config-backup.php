@@ -26,9 +26,10 @@
  *   log [N]                       last N lines (default 50) of the runner's log
  *   report                        push the state to the Zabbix monitoring host now, showing each value's result
  *   check                         storage, keys, API token, git, vendored SFTP library
+ *   use-storage                   point the frontend (module config in Zabbix) at --storage; used after a move
  *
  * Options:
- *   --storage=DIR   default /var/lib/zabbix/configbackup (or $CONFIGBACKUP_STORAGE)
+ *   --storage=DIR   default /var/lib/zabbix-configbackup (or $CONFIGBACKUP_STORAGE)
  *   --quiet         only errors
  *   --allow-root    run as root anyway (normally refused: it would leave files the frontend cannot write)
  *
@@ -320,6 +321,20 @@ try {
 			foreach (Runner::logTail($storage, max(1, (int) ($args[1] ?? 50))) as $line) {
 				echo $line, "\n";
 			}
+			exit(0);
+
+		case 'use-storage':
+			$modules = $runner->api()->call('module.get', ['output' => ['moduleid', 'config'], 'filter' => ['id' => Settings::MODULE_ID]]);
+
+			if (!$modules) {
+				$fail('The Config backup module is not registered in Zabbix (Administration > General > Modules > Scan directory).');
+			}
+
+			$config = (array) $modules[0]['config'];
+			$old = $config['storage'] ?? '(default)';
+			$config['storage'] = $storage;
+			$runner->api()->call('module.update', ['moduleid' => $modules[0]['moduleid'], 'config' => $config]);
+			$say(sprintf('Frontend storage path: %s -> %s', $old, $storage));
 			exit(0);
 
 		case 'check':

@@ -7,10 +7,11 @@
 #   --purge   also delete the storage directory: every local snapshot, settings, sealed credentials.
 #             Copies on S3/SFTP/Git are not touched.
 #   --yes     do not ask before --purge.
+#   --storage DIR   default /var/lib/zabbix-configbackup (/var/lib/zabbix/configbackup before 1.4.0).
 
 set -eu
 
-STORAGE=/var/lib/zabbix/configbackup
+STORAGE=/var/lib/zabbix-configbackup
 PURGE=0
 YES=0
 
@@ -50,6 +51,7 @@ esac
 
 if [ ! -d "$STORAGE" ]; then
 	echo "$STORAGE does not exist."
+	[ -d /var/lib/zabbix/configbackup ] && echo "Found the pre-1.4.0 location /var/lib/zabbix/configbackup: add --storage /var/lib/zabbix/configbackup to purge that."
 	exit 0
 fi
 

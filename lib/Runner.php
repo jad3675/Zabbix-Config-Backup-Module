@@ -11,7 +11,7 @@ namespace Modules\ConfigBackup\Lib;
  */
 class Runner {
 
-	public const VERSION = '1.3.2';
+	public const VERSION = '1.4.0';
 	private const RETRY_MAX = 5;
 
 	private string $storage;

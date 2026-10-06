@@ -3,7 +3,7 @@
 Snapshots of Zabbix configuration on a schedule, copied to S3, SFTP and Git, with restore of a single object,
 a selection, or a copy under a new name. Built because there is no undo for a deleted dashboard.
 
-Version 1.3.2. Developed and tested on Zabbix 7.4.15, also running on 8.0.0, with PostgreSQL, against an S3 mock (moto), OpenSSH sftp and a bare Git
+Version 1.4.0. Developed and tested on Zabbix 7.4.15, also running on 8.0.0, with PostgreSQL, against an S3 mock (moto), OpenSSH sftp and a bare Git
 repository over SSH. Super admin only: snapshots contain users, roles and every action.
 
 ## What it backs up
@@ -46,15 +46,15 @@ Safe to run again at any time; it repairs rather than assumes.
 
 - Finds the user PHP runs the frontend as: the `user =` of the php-fpm pool (Zabbix ships `zabbix.conf`), else the
   user of running php-fpm/apache2/httpd workers, else www-data/apache/nginx. Override with `--user`.
-- Creates the storage directory (`--storage`, default `/var/lib/zabbix/configbackup`) and gives it, and
+- Creates the storage directory (`--storage`, default `/var/lib/zabbix-configbackup`) and gives it, and
   everything already in it, to that user. Clears setgid bits and tightens `.state/`. This is the fix for
   "Storage path ... is not writable by user www-data", whether the directory was made by hand as root or a CLI
   command was run as root.
-- Walks up the parents. `/var/lib/zabbix` is the zabbix user's home and often 0750, which blocks the web server
-  even when the directory itself is right. It adds traverse only (`o+x`) where needed and says so; nothing becomes
-  listable or readable.
+- Walks up the parents and adds traverse only (`o+x`) where one blocks the web server, saying so. With the
+  default path nothing needs changing.
+- Warns when the storage shares a filesystem with PostgreSQL or MySQL. Snapshots are small and retention keeps
+  them that way, but a dedicated volume means a runaway setting can never fill the database's disk.
 - SELinux enforcing: labels the directory `httpd_sys_rw_content_t` (needs `semanage`).
-- Removes the 1.0 cron job that ran `backup` directly.
 - Installs the systemd timer (every 5 minutes) with the right `User=`, PHP path and `--storage`, or a cron job
   when systemd is not running or `--cron` is given.
 - Runs `check` as the web server user and shows the result.
@@ -360,7 +360,7 @@ zbx-config-backup.php keygen PRIVATE.pem PUBLIC.pem
 zbx-config-backup.php decrypt FILE.tar.cbk --key=PRIVATE.pem [--out=FILE.tar]
 ```
 
-`--storage=DIR` (default `/var/lib/zabbix/configbackup`, or `$CONFIGBACKUP_STORAGE`), `--quiet`. DEST is a
+`--storage=DIR` (default `/var/lib/zabbix-configbackup`, or `$CONFIGBACKUP_STORAGE`), `--quiet`. DEST is a
 destination name or ID. Exit codes: 0 ok, 1 partly failed, 2 failed. Run as the web server user.
 
 ## Storage layout
@@ -383,12 +383,6 @@ destination name or ID. Exit codes: 0 ok, 1 partly failed, 2 failed. Run as the 
 
 On S3 and SFTP a snapshot is one file, `<snapshot>.<schedule-id or manual>.tar`, or `.tar.cbk` when encrypted.
 Remote retention only ever touches files named like that.
-
-## Upgrading from 1.0
-
-Retention and object types move from the module config into `<storage>/.state/settings.json` on first load. The
-old `/etc/zabbix/configbackup.conf` is no longer used: enter the URL and token in Settings, run
-`contrib/install-runner.sh` (it also removes the old cron job), then create a schedule.
 
 ## Known limits
 

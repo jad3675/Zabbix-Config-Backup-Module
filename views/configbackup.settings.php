@@ -166,7 +166,7 @@ $html_page->addItem($mon_form);
  */
 $user = $data['process_user'];
 $script = $data['module_dir'].'/bin/zbx-config-backup.php';
-$storage_arg = $data['storage'] !== '/var/lib/zabbix/configbackup' ? ' --storage='.$data['storage'] : '';
+$storage_arg = $data['storage'] !== Modules\ConfigBackup\Lib\Settings::DEFAULT_STORAGE ? ' --storage='.$data['storage'] : '';
 
 $unit = implode("\n", [
 	'# /etc/systemd/system/zabbix-configbackup.service',

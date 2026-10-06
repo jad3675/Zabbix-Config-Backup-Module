@@ -2,10 +2,12 @@
 # Installs the Config backup runner and makes the storage directory usable by the frontend.
 # Safe to run again: it repairs ownership and permissions and replaces the timer.
 #
-#   sh contrib/install-runner.sh [--storage DIR] [--user USER] [--php PATH] [--cron]
+#   sh contrib/install-runner.sh [--storage DIR] [--user USER] [--php PATH] [--cron] [--migrate|--no-migrate]
 #
-#   --storage DIR   default /var/lib/zabbix/configbackup. If you change it, set the same path in
-#                   Config backup > Settings.
+#   --storage DIR   default /var/lib/zabbix-configbackup. The frontend is pointed at it automatically when
+#                   the API token is set; otherwise set the same path in Config backup > Settings.
+#   --migrate       move snapshots from the pre-1.4.0 location /var/lib/zabbix/configbackup without asking.
+#   --no-migrate    leave them there and keep using that location.
 #   --user USER     the user PHP runs as for the Zabbix frontend. Detected from the php-fpm pool or the
 #                   running web server when omitted (www-data, apache or nginx).
 #   --php PATH      PHP CLI binary, default: the one in PATH.
@@ -17,18 +19,25 @@ step() { echo; echo "==> $*"; }
 trap 'rc=$?; [ $rc -eq 0 ] || echo "FAILED at the step above (exit $rc). Nothing after it ran." >&2' EXIT
 
 MODULE_DIR=$(cd "$(dirname "$0")/.." && pwd)
-STORAGE=/var/lib/zabbix/configbackup
+DEFAULT_STORAGE=/var/lib/zabbix-configbackup
+LEGACY_STORAGE=/var/lib/zabbix/configbackup
+STORAGE=$DEFAULT_STORAGE
+STORAGE_SET=0
+MIGRATE=
+MIGRATED=0
 WEB_USER=
 PHP_BIN=
 USE_CRON=0
 
 while [ $# -gt 0 ]; do
 	case "$1" in
-		--storage) STORAGE=${2%/}; shift 2 ;;
+		--storage) STORAGE=${2%/}; STORAGE_SET=1; shift 2 ;;
+		--migrate) MIGRATE=1; shift ;;
+		--no-migrate) MIGRATE=0; shift ;;
 		--user) WEB_USER=$2; shift 2 ;;
 		--php) PHP_BIN=$2; shift 2 ;;
 		--cron) USE_CRON=1; shift ;;
-		-h|--help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+		-h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
 		*) echo "unknown option: $1 (try --help)" >&2; exit 2 ;;
 	esac
 done
@@ -84,8 +93,61 @@ for ext in curl openssl zlib json; do
 done
 echo "php:      $PHP_BIN ($("$PHP_BIN" -r 'echo PHP_VERSION;'))"
 
+has_data() {
+	[ -d "$1" ] && { [ -d "$1/.state" ] || ls "$1"/*/meta.json >/dev/null 2>&1; }
+}
+
+if [ "$STORAGE_SET" -eq 0 ] && [ "$STORAGE" != "$LEGACY_STORAGE" ] && has_data "$LEGACY_STORAGE"; then
+	step "found snapshots in the pre-1.4.0 location $LEGACY_STORAGE"
+
+	if has_data "$STORAGE"; then
+		echo "  $STORAGE has data too, so nothing is moved. Keeping $STORAGE; the old location is left as is."
+		echo "  Compare them, then delete one (or run this with --storage $LEGACY_STORAGE to stay there)."
+	else
+		if [ -z "$MIGRATE" ]; then
+			if [ -t 0 ]; then
+				echo "  It now defaults to $STORAGE: owned by $WEB_USER alone, no permission changes on"
+				echo "  /var/lib/zabbix (the zabbix user's home), and independent of the server package."
+				printf '  Move snapshots, settings and keys there? [Y/n] '
+				read -r answer
+				case "$answer" in n|N|no|NO) MIGRATE=0 ;; *) MIGRATE=1 ;; esac
+			else
+				MIGRATE=0
+				echo "  Not a terminal, so not moving anything. Rerun with --migrate to move, or --no-migrate to silence this."
+			fi
+		fi
+
+		if [ "$MIGRATE" -eq 1 ]; then
+			# Nothing may write to the old location while it moves.
+			if command -v systemctl >/dev/null 2>&1; then
+				systemctl stop zabbix-configbackup.timer 2>/dev/null || true
+				systemctl stop zabbix-configbackup.service 2>/dev/null || true
+			fi
+			rm -f /etc/cron.d/zabbix-configbackup
+			if command -v flock >/dev/null 2>&1 && [ -f "$LEGACY_STORAGE/.state/runner.lock" ]; then
+				flock -w 600 "$LEGACY_STORAGE/.state/runner.lock" true || { echo "A runner pass is still busy after 10 minutes; try again later." >&2; exit 1; }
+			fi
+
+			mkdir -p "$(dirname "$STORAGE")"
+			[ -d "$STORAGE" ] && rmdir "$STORAGE" 2>/dev/null || true
+			mv "$LEGACY_STORAGE" "$STORAGE"
+			MIGRATED=1
+			echo "  moved $LEGACY_STORAGE -> $STORAGE"
+
+			if command -v semanage >/dev/null 2>&1; then
+				semanage fcontext -d "$LEGACY_STORAGE(/.*)?" 2>/dev/null || true
+			fi
+			echo "  Earlier installs added o+x (traverse only) to /var/lib/zabbix. It is no longer needed;"
+			echo "  remove it with 'chmod o-x /var/lib/zabbix' if nothing else relies on it."
+		else
+			STORAGE=$LEGACY_STORAGE
+			echo "  keeping $LEGACY_STORAGE"
+		fi
+	fi
+fi
+
 STORAGE_ARG=
-[ "$STORAGE" = /var/lib/zabbix/configbackup ] || STORAGE_ARG=" --storage=$STORAGE"
+[ "$STORAGE" = "$DEFAULT_STORAGE" ] || STORAGE_ARG=" --storage=$STORAGE"
 
 step "creating the storage directory"
 
@@ -100,6 +162,17 @@ if [ -d "$STORAGE/.state" ]; then
 	find "$STORAGE/.state" -type f -exec chmod 0600 {} +
 fi
 ls -ld "$STORAGE" | sed 's/^/  /'
+
+# Snapshots are small, but a full /var also stops the database. Say so if they share a filesystem.
+mount_of() { df -P "$1" 2>/dev/null | awk 'NR==2 {print $6}'; }
+storage_mount=$(mount_of "$STORAGE")
+for db in /var/lib/postgresql /var/lib/pgsql /var/lib/mysql; do
+	if [ -d "$db" ] && [ "$(mount_of "$db")" = "$storage_mount" ]; then
+		echo "  note: $STORAGE is on the same filesystem ($storage_mount) as $db. Retention keeps it small,"
+		echo "        but a dedicated volume means a runaway setting can never fill the database's disk."
+		break
+	fi
+done
 
 step "checking every parent directory lets $WEB_USER through"
 
@@ -203,8 +276,21 @@ step "checking from the runner's side"
 
 runuser -u "$WEB_USER" -- "$PHP_BIN" "$MODULE_DIR/bin/zbx-config-backup.php" check$STORAGE_ARG || true
 
+if [ "$MIGRATED" -eq 1 ] || [ "$STORAGE_SET" -eq 1 ]; then
+	step "pointing the frontend at $STORAGE"
+
+	if runuser -u "$WEB_USER" -- "$PHP_BIN" "$MODULE_DIR/bin/zbx-config-backup.php" use-storage --storage="$STORAGE"; then
+		:
+	else
+		echo "  Could not update it through the API (token not set yet?)."
+		echo "  Set Storage path to $STORAGE in Config backup > Settings."
+	fi
+fi
+
 echo
 echo "Done. If the api line above is not OK yet: Config backup > Settings, enter the Zabbix URL and an"
 echo "API token of a Super admin user. Then add destinations and a schedule."
-[ -z "$STORAGE_ARG" ] || echo "You used a non-default storage path: set $STORAGE in Settings as well."
+if [ "$MIGRATED" -eq 1 ]; then
+	echo "Snapshots, settings and keys now live in $STORAGE."
+fi
 echo "Status at any time:  sudo -u $WEB_USER $PHP_BIN $MODULE_DIR/bin/zbx-config-backup.php status$STORAGE_ARG"
