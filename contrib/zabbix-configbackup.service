@@ -1,0 +1,13 @@
+# /etc/systemd/system/zabbix-configbackup.service
+# User/Group: www-data on Debian/Ubuntu, apache (httpd) or nginx on RHEL-family.
+# Add --storage=DIR to ExecStart if you changed the storage path in Settings.
+[Unit]
+Description=Zabbix config backup runner (schedules and queued requests)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+ExecStart=/usr/bin/php /usr/share/zabbix/ui/modules/configbackup/bin/zbx-config-backup.php run-due --quiet
+Nice=10

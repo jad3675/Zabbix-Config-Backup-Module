@@ -1,0 +1,2 @@
+# /etc/cron.d/zabbix-configbackup  (only if you don't use the systemd timer)
+*/5 * * * * www-data php /usr/share/zabbix/ui/modules/configbackup/bin/zbx-config-backup.php run-due --quiet

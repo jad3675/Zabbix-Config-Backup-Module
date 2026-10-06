@@ -1,0 +1,182 @@
+/* Config backup module. Colours are translucent so they read on blue, dark and high-contrast themes. */
+
+.cb-state {
+	display: inline-block;
+	padding: 1px 6px;
+	border-radius: 2px;
+	border: 1px solid transparent;
+	font-size: 11px;
+	line-height: 16px;
+	white-space: nowrap;
+}
+
+.cb-state-missing { background: rgba(228, 89, 89, .18); border-color: rgba(228, 89, 89, .55); }
+.cb-state-recreated { background: rgba(240, 156, 52, .18); border-color: rgba(240, 156, 52, .55); }
+.cb-state-changed { background: rgba(233, 204, 74, .2); border-color: rgba(233, 204, 74, .6); }
+.cb-state-same { background: rgba(89, 219, 143, .15); border-color: rgba(89, 219, 143, .5); }
+.cb-state-present,
+.cb-state-unknown { background: rgba(128, 128, 128, .12); border-color: rgba(128, 128, 128, .4); }
+
+.cb-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 10px;
+	padding: 8px 10px;
+	margin-bottom: 8px;
+	border: 1px solid rgba(128, 128, 128, .3);
+}
+
+.cb-bar .cb-bar-label {
+	color: inherit;
+	opacity: .75;
+}
+
+.cb-bar .cb-spacer {
+	flex: 1 1 auto;
+}
+
+.cb-summary .cb-state {
+	margin-right: 6px;
+}
+
+.cb-section-title {
+	margin: 16px 0 6px;
+	font-size: 14px;
+	font-weight: bold;
+}
+
+.cb-muted {
+	opacity: .45;
+}
+
+.cb-mode-list label {
+	display: block;
+	margin: 2px 0;
+}
+
+.cb-mode-help {
+	margin-top: 4px;
+	max-width: 760px;
+	opacity: .8;
+}
+
+.cb-diff,
+.cb-json,
+.cb-code {
+	max-height: 560px;
+	overflow: auto;
+	margin: 0;
+	padding: 6px 0;
+	border: 1px solid rgba(128, 128, 128, .3);
+	font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace;
+	font-size: 12px;
+	line-height: 17px;
+	white-space: pre;
+}
+
+.cb-json,
+.cb-code {
+	padding: 6px 10px;
+}
+
+.cb-diff div {
+	padding: 0 10px;
+	min-height: 17px;
+}
+
+.cb-diff .cb-add { background: rgba(89, 219, 143, .18); }
+.cb-diff .cb-del { background: rgba(228, 89, 89, .18); }
+.cb-diff .cb-skip { opacity: .55; font-style: italic; }
+
+.cb-legend span {
+	margin-right: 14px;
+}
+
+.cb-types {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 12px 24px;
+	max-width: 1000px;
+	margin-top: 8px;
+}
+
+.cb-types-title {
+	font-weight: bold;
+	margin-bottom: 4px;
+}
+
+.cb-types-group > div {
+	margin: 3px 0;
+}
+
+details.cb-details > summary {
+	cursor: pointer;
+	margin: 12px 0 6px;
+	font-weight: bold;
+}
+
+.cb-note {
+	max-width: 760px;
+	line-height: 1.5;
+}
+
+a.cb-state,
+a.cb-state:link,
+a.cb-state:visited {
+	color: inherit;
+	text-decoration: none;
+}
+
+a.cb-state:hover,
+a.cb-state:focus {
+	border-style: solid;
+	border-width: 1px;
+	filter: brightness(1.15);
+	text-decoration: underline;
+}
+
+.cb-inline-form {
+	display: inline;
+}
+
+.cb-status {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+}
+
+.cb-mono {
+	font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+.cb-bar .checkbox-radio + label {
+	margin-right: 8px;
+}
+
+.cb-api-problem {
+	margin-top: 4px;
+	max-width: 900px;
+	line-height: 1.5;
+	white-space: normal;
+}
+
+.form-grid > .cb-grid-heading {
+	grid-column: 1 / -1;
+	margin: 14px 0 2px;
+	font-size: 14px;
+	font-weight: bold;
+}
+
+.cb-remote-row td {
+	opacity: .85;
+}
+
+.cb-remote-row .cb-inline-form button {
+	margin: 0;
+}
+
+.cb-pre-line {
+	white-space: pre-line;
+}

@@ -1,0 +1,90 @@
+{
+	"manifest_version": 2.0,
+	"id": "configbackup",
+	"name": "Config backup",
+	"version": "1.3.2",
+	"namespace": "ConfigBackup",
+	"author": "John Danhires",
+	"description": "Scheduled snapshots of Zabbix configuration to local storage, S3, SFTP and Git, with single-object, bulk and as-copy restore.",
+	"actions": {
+		"configbackup.list": {
+			"class": "SnapshotList",
+			"view": "configbackup.list"
+		},
+		"configbackup.backup": {
+			"class": "BackupRun"
+		},
+		"configbackup.snapshot": {
+			"class": "SnapshotView",
+			"view": "configbackup.snapshot"
+		},
+		"configbackup.snapshot.update": {
+			"class": "SnapshotUpdate"
+		},
+		"configbackup.snapshot.delete": {
+			"class": "SnapshotDelete"
+		},
+		"configbackup.object": {
+			"class": "ObjectView",
+			"view": "configbackup.object"
+		},
+		"configbackup.restore": {
+			"class": "RestoreRun"
+		},
+		"configbackup.download": {
+			"class": "Download",
+			"layout": "layout.export"
+		},
+		"configbackup.settings": {
+			"class": "SettingsEdit",
+			"view": "configbackup.settings"
+		},
+		"configbackup.settings.update": {
+			"class": "SettingsUpdate"
+		},
+		"configbackup.queue": {
+			"class": "QueueAdd"
+		},
+		"configbackup.schedules": {
+			"class": "ScheduleList",
+			"view": "configbackup.schedules"
+		},
+		"configbackup.schedule.edit": {
+			"class": "ScheduleEdit",
+			"view": "configbackup.schedule.edit"
+		},
+		"configbackup.schedule.update": {
+			"class": "ScheduleUpdate"
+		},
+		"configbackup.destinations": {
+			"class": "DestinationList",
+			"view": "configbackup.destinations"
+		},
+		"configbackup.destination.edit": {
+			"class": "DestinationEdit",
+			"view": "configbackup.destination.edit"
+		},
+		"configbackup.destination.update": {
+			"class": "DestinationUpdate"
+		},
+		"configbackup.remote": {
+			"class": "RemoteList",
+			"view": "configbackup.remote"
+		},
+		"configbackup.restore.parts": {
+			"class": "RestorePartsRun"
+		},
+		"configbackup.pull": {
+			"class": "PullRun"
+		},
+		"configbackup.monitor.setup": {
+			"class": "MonitorSetup"
+		}
+	},
+	"assets": {
+		"css": [
+			"configbackup.css"
+		]
+	},
+	"config": {}
+}
